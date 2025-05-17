@@ -3,15 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Detector de Estalos de Dedos</title>
+    <title>Detector de Sons (Estalo, Palmas, Voz)</title>
     <style>
-        /* Reset básico */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -24,14 +17,12 @@
             padding: 20px;
             text-align: center;
         }
-
         h1 {
             font-weight: 700;
             font-size: 2.8rem;
             margin-bottom: 1rem;
             text-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
-
         #result {
             margin-top: 2rem;
             font-size: 1.8rem;
@@ -43,13 +34,11 @@
             min-width: 280px;
             transition: background-color 0.4s ease, color 0.4s ease;
         }
-
         #result.detected {
             background-color: #4caf50;
             color: #fff;
             box-shadow: 0 8px 25px #4caf50aa;
         }
-
         button {
             background: #fff;
             color: #764ba2;
@@ -63,34 +52,28 @@
             transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
             user-select: none;
         }
-
         button:hover {
             background-color: #764ba2;
             color: #fff;
             transform: scale(1.05);
         }
-
         button:active {
             transform: scale(0.95);
         }
-
         footer {
             margin-top: 3rem;
             font-size: 0.9rem;
             color: #ddd;
             opacity: 0.7;
         }
-
         @media (max-width: 480px) {
             h1 {
                 font-size: 2rem;
             }
-
             button {
                 padding: 12px 30px;
                 font-size: 1rem;
             }
-
             #result {
                 font-size: 1.4rem;
                 padding: 15px 20px;
@@ -101,7 +84,7 @@
 </head>
 <body>
 
-    <h1>Detector de Estalos de Dedos</h1>
+    <h1>Detector de Sons</h1>
     <button id="startBtn">Iniciar Detecção</button>
     <div id="result">Status: Aguardando...</div>
 
@@ -120,6 +103,7 @@
         const modelURL = 'https://som-eight.vercel.app/assets/';
 
         let recognizer;
+        let labels = [];
 
         async function init() {
             resultEl.textContent = 'Carregando modelo...';
@@ -130,13 +114,14 @@
                 modelURL + 'metadata.json'
             );
             await recognizer.ensureModelLoaded();
+            labels = recognizer.wordLabels(); // Pega as classes do modelo
             resultEl.textContent = 'Modelo carregado! Clique em "Iniciar Detecção"';
             startBtn.disabled = false;
         }
 
         async function startListening() {
             startBtn.disabled = true;
-            resultEl.textContent = 'Escutando... Faça um estalo de dedo!';
+            resultEl.textContent = 'Escutando... Faça um som (estalo, palmas, voz)!';
             resultEl.classList.remove('detected');
 
             recognizer.listen(({ scores }) => {
@@ -144,18 +129,17 @@
                 const maxScore = Math.max(...scores);
                 const maxIndex = scores.indexOf(maxScore);
 
-                // Supondo que a classe 0 seja "Estalo"
-                if (maxIndex === 0 && maxScore > 0.90) {
-                    resultEl.textContent = '👏 ESTALO DETECTADO!';
+                if (maxScore > 0.85) { // Ajuste o threshold conforme necessário
+                    const detectedLabel = labels[maxIndex];
+                    resultEl.textContent = `🔊 Detectado: ${detectedLabel.toUpperCase()} (${(maxScore * 100).toFixed(1)}%)`;
                     resultEl.classList.add('detected');
-                    // Aqui você pode adicionar ações extras, como tocar som ou animar algo
                 } else {
-                    resultEl.textContent = 'Escutando... Faça um estalo de dedo!';
+                    resultEl.textContent = 'Escutando... Faça um som (estalo, palmas, voz)!';
                     resultEl.classList.remove('detected');
                 }
             }, {
                 includeSpectrogram: true,
-                probabilityThreshold: 0.90,
+                probabilityThreshold: 0.85,
                 invokeCallbackOnNoiseAndUnknown: true
             });
         }
