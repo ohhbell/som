@@ -1,316 +1,162 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Detector de Sons + Visualizador com Freeze</title>
-<style>
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: #fff;
-    min-height: 100vh;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 20px;
-    text-align: center;
-  }
-  h1 {
-    font-weight: 700;
-    font-size: 2.8rem;
-    margin-bottom: 1rem;
-    text-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  }
-  #result {
-    margin-top: 1rem;
-    font-size: 1.8rem;
-    font-weight: 600;
-    padding: 20px 30px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-    min-width: 280px;
-    transition: background-color 0.4s ease, color 0.4s ease;
-  }
-  #result.detected {
-    background-color: #4caf50;
-    color: #fff;
-    box-shadow: 0 8px 25px #4caf50aa;
-  }
-  button {
-    background: #fff;
-    color: #764ba2;
-    border: none;
-    padding: 15px 40px;
-    font-size: 1.2rem;
-    font-weight: 700;
-    border-radius: 30px;
-    cursor: pointer;
-    box-shadow: 0 6px 15px rgba(255,255,255,0.5);
-    transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
-    user-select: none;
-    margin: 10px 10px 0 10px;
-  }
-  button:hover {
-    background-color: #764ba2;
-    color: #fff;
-    transform: scale(1.05);
-  }
-  button:active {
-    transform: scale(0.95);
-  }
-  .btn-group {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-  }
-  canvas {
-    margin-top: 30px;
-    border-radius: 12px;
-    background-color: rgba(255,255,255,0.1);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-  }
-  #waveform {
-    width: 90vw;
-    max-width: 700px;
-    height: 120px;
-  }
-  #frequency {
-    width: 90vw;
-    max-width: 700px;
-    height: 150px;
-  }
-  footer {
-    margin-top: 3rem;
-    font-size: 0.9rem;
-    color: #ddd;
-    opacity: 0.7;
-  }
-  @media (max-width: 480px) {
-    h1 {
-      font-size: 2rem;
-    }
-    button {
-      padding: 12px 30px;
-      font-size: 1rem;
-    }
-    #result {
-      font-size: 1.4rem;
-      padding: 15px 20px;
-      min-width: 220px;
-    }
-    #waveform, #frequency {
-      height: 100px;
-    }
-  }
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Detector de Sons (Estalo, Palmas, Voz)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            font-weight: 700;
+            font-size: 2.8rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        #result {
+            margin-top: 2rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+            padding: 20px 30px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            min-width: 280px;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+        #result.detected {
+            background-color: #4caf50;
+            color: #fff;
+            box-shadow: 0 8px 25px #4caf50aa;
+        }
+        button {
+            background: #fff;
+            color: #764ba2;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(255,255,255,0.5);
+            transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+            user-select: none;
+        }
+        button:hover {
+            background-color: #764ba2;
+            color: #fff;
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        footer {
+            margin-top: 3rem;
+            font-size: 0.9rem;
+            color: #ddd;
+            opacity: 0.7;
+        }
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2rem;
+            }
+            button {
+                padding: 12px 30px;
+                font-size: 1rem;
+            }
+            #result {
+                font-size: 1.4rem;
+                padding: 15px 20px;
+                min-width: 220px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<h1>Detector de Sons + Visualizador com Freeze</h1>
+    <h1>Detector de Sons</h1>
+    <button id="startBtn">Iniciar Detecção</button>
+    <div id="result">Status: Aguardando...</div>
 
-<div class="btn-group">
-  <button id="startBtn">Iniciar Detecção</button>
-  <button id="freezeBtn" disabled>Congelar Visualização</button>
-</div>
+    <footer>
+        Desenvolvido com ❤️ usando Teachable Machine e TensorFlow.js
+    </footer>
 
-<div id="result">Status: Aguardando...</div>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.3.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands"></script>
 
-<!-- Canvas para forma de onda -->
-<canvas id="waveform"></canvas>
-<!-- Canvas para espectro de frequência -->
-<canvas id="frequency"></canvas>
+    <script>
+        const resultEl = document.getElementById('result');
+        const startBtn = document.getElementById('startBtn');
 
-<footer>
-  Desenvolvido com ❤️ usando Teachable Machine, TensorFlow.js e Web Audio API
-</footer>
+        // URL completa do seu modelo hospedado no Vercel (substitua pelo seu domínio)
+        const modelURL = 'https://som-eight.vercel.app/assets/';
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.3.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands"></script>
+        let recognizer;
+        let labels = [];
 
-<script>
-  const resultEl = document.getElementById('result');
-  const startBtn = document.getElementById('startBtn');
-  const freezeBtn = document.getElementById('freezeBtn');
-  const waveformCanvas = document.getElementById('waveform');
-  const frequencyCanvas = document.getElementById('frequency');
-  const waveformCtx = waveformCanvas.getContext('2d');
-  const frequencyCtx = frequencyCanvas.getContext('2d');
+        async function init() {
+            resultEl.textContent = 'Carregando modelo...';
+            recognizer = speechCommands.create(
+                'BROWSER_FFT',
+                null,
+                modelURL + 'model.json',
+                modelURL + 'metadata.json'
+            );
+            await recognizer.ensureModelLoaded();
+            labels = recognizer.wordLabels(); // Obtém as classes do modelo
+            resultEl.textContent = 'Modelo carregado! Clique em "Iniciar Detecção"';
+            startBtn.disabled = false;
+        }
 
-  // Ajusta o tamanho dos canvas para a largura atual
-  function resizeCanvas() {
-    waveformCanvas.width = waveformCanvas.clientWidth * devicePixelRatio;
-    waveformCanvas.height = waveformCanvas.clientHeight * devicePixelRatio;
-    waveformCtx.scale(devicePixelRatio, devicePixelRatio);
+        async function startListening() {
+            startBtn.disabled = true;
+            resultEl.textContent = 'Escutando... Faça um som (estalo, palmas, voz)!';
+            resultEl.classList.remove('detected');
 
-    frequencyCanvas.width = frequencyCanvas.clientWidth * devicePixelRatio;
-    frequencyCanvas.height = frequencyCanvas.clientHeight * devicePixelRatio;
-    frequencyCtx.scale(devicePixelRatio, devicePixelRatio);
-  }
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
+            recognizer.listen(({ scores }) => {
+                // scores é um array com probabilidades para cada classe
+                const maxScore = Math.max(...scores);
+                const maxIndex = scores.indexOf(maxScore);
 
-  // URL do seu modelo hospedado no Vercel - substitua pela sua URL real
-  const modelURL = 'https://som-eight.vercel.app/assets/';
+                if (maxScore > 0.85) { // Threshold para evitar falsos positivos
+                    const detectedLabel = labels[maxIndex];
+                    // Exibe o nome da classe detectada e a confiança em %
+                    resultEl.textContent = `🔊 Detectado: ${detectedLabel.toUpperCase()} (${(maxScore * 100).toFixed(1)}%)`;
+                    resultEl.classList.add('detected');
+                } else {
+                    // Enquanto não detecta nada com confiança suficiente
+                    resultEl.textContent = 'Escutando... Faça um som (estalo, palmas, voz)!';
+                    resultEl.classList.remove('detected');
+                }
+            }, {
+                includeSpectrogram: true,
+                probabilityThreshold: 0.85,
+                invokeCallbackOnNoiseAndUnknown: true
+            });
+        }
 
-  let recognizer;
-  let labels = [];
+        startBtn.addEventListener('click', async () => {
+            if (!recognizer) {
+                await init();
+            }
+            startListening();
+        });
 
-  // Web Audio API setup
-  let audioContext;
-  let analyserWaveform;
-  let analyserFrequency;
-  let sourceNode;
-  let dataArrayWaveform;
-  let dataArrayFrequency;
-  let animationId;
-
-  // Flag para controlar freeze/unfreeze
-  let isFrozen = false;
-
-  async function init() {
-    resultEl.textContent = 'Carregando modelo...';
-    recognizer = speechCommands.create(
-      'BROWSER_FFT',
-      null,
-      modelURL + 'model.json',
-      modelURL + 'metadata.json'
-    );
-    await recognizer.ensureModelLoaded();
-    labels = recognizer.wordLabels();
-    resultEl.textContent = 'Modelo carregado! Clique em "Iniciar Detecção"';
-    startBtn.disabled = false;
-  }
-
-  async function setupAudio() {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    sourceNode = audioContext.createMediaStreamSource(stream);
-
-    analyserWaveform = audioContext.createAnalyser();
-    analyserWaveform.fftSize = 2048;
-    sourceNode.connect(analyserWaveform);
-    dataArrayWaveform = new Uint8Array(analyserWaveform.fftSize);
-
-    analyserFrequency = audioContext.createAnalyser();
-    analyserFrequency.fftSize = 256;
-    sourceNode.connect(analyserFrequency);
-    dataArrayFrequency = new Uint8Array(analyserFrequency.frequencyBinCount);
-  }
-
-  function drawWaveform() {
-    analyserWaveform.getByteTimeDomainData(dataArrayWaveform);
-
-    waveformCtx.clearRect(0, 0, waveformCanvas.width / devicePixelRatio, waveformCanvas.height / devicePixelRatio);
-
-    waveformCtx.lineWidth = 2;
-    waveformCtx.strokeStyle = '#4caf50';
-    waveformCtx.beginPath();
-
-    const width = waveformCanvas.clientWidth;
-    const height = waveformCanvas.clientHeight;
-    const sliceWidth = width / dataArrayWaveform.length;
-    let x = 0;
-
-    for (let i = 0; i < dataArrayWaveform.length; i++) {
-      const v = dataArrayWaveform[i] / 128.0; // normalizado entre 0 e 2
-      const y = v * height / 2;
-
-      if (i === 0) {
-        waveformCtx.moveTo(x, y);
-      } else {
-        waveformCtx.lineTo(x, y);
-      }
-      x += sliceWidth;
-    }
-
-    waveformCtx.lineTo(width, height / 2);
-    waveformCtx.stroke();
-  }
-
-  function drawFrequency() {
-    analyserFrequency.getByteFrequencyData(dataArrayFrequency);
-
-    frequencyCtx.clearRect(0, 0, frequencyCanvas.width / devicePixelRatio, frequencyCanvas.height / devicePixelRatio);
-
-    const width = frequencyCanvas.clientWidth;
-    const height = frequencyCanvas.clientHeight;
-    const barWidth = (width / dataArrayFrequency.length) * 2.5;
-    let x = 0;
-
-    for (let i = 0; i < dataArrayFrequency.length; i++) {
-      const barHeight = dataArrayFrequency[i] / 2;
-      frequencyCtx.fillStyle = `rgb(${barHeight + 100},50,${255 - barHeight})`;
-      frequencyCtx.fillRect(x, height - barHeight, barWidth, barHeight);
-      x += barWidth + 1;
-    }
-  }
-
-  function animate() {
-    if (!isFrozen) {
-      drawWaveform();
-      drawFrequency();
-      animationId = requestAnimationFrame(animate);
-    }
-  }
-
-  async function startListening() {
-    startBtn.disabled = true;
-    freezeBtn.disabled = false;
-    resultEl.textContent = 'Escutando... Faça um som (estalo, palmas, voz)!';
-    resultEl.classList.remove('detected');
-
-    await setupAudio();
-    animate();
-
-    recognizer.listen(({ scores }) => {
-      const maxScore = Math.max(...scores);
-      const maxIndex = scores.indexOf(maxScore);
-
-      if (maxScore > 0.85) {
-        const detectedLabel = labels[maxIndex];
-        resultEl.textContent = `🔊 Detectado: ${detectedLabel.toUpperCase()} (${(maxScore * 100).toFixed(1)}%)`;
-        resultEl.classList.add('detected');
-      } else {
-        resultEl.textContent = 'Escutando... Faça um som (estalo, palmas, voz)!';
-        resultEl.classList.remove('detected');
-      }
-    }, {
-      includeSpectrogram: true,
-      probabilityThreshold: 0.85,
-      invokeCallbackOnNoiseAndUnknown: true
-    });
-  }
-
-  freezeBtn.addEventListener('click', () => {
-    if (isFrozen) {
-      // Descongela a visualização
-      isFrozen = false;
-      freezeBtn.textContent = 'Congelar Visualização';
-      animate();
-    } else {
-      // Congela a visualização
-      isFrozen = true;
-      freezeBtn.textContent = 'Descongelar Visualização';
-      if (animationId) cancelAnimationFrame(animationId);
-    }
-  });
-
-  startBtn.addEventListener('click', async () => {
-    if (!recognizer) {
-      await init();
-    }
-    startListening();
-  });
-
-  // Inicializa o botão desabilitado até o modelo carregar
-  startBtn.disabled = true;
-  freezeBtn.disabled = true;
-  init();
-</script>
+        // Desabilita botão até o modelo carregar
+        startBtn.disabled = true;
+        init();
+    </script>
 
 </body>
 </html>
