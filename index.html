@@ -1,53 +1,176 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <title>Detector de Estalos</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Detector de Estalos de Dedos</title>
     <style>
-        body { font-family: Arial; text-align: center; }
-        #result { font-size: 24px; margin: 20px; }
-        button { padding: 15px; font-size: 18px; }
+        /* Reset básico */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 2.8rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        #result {
+            margin-top: 2rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+            padding: 20px 30px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            min-width: 280px;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        #result.detected {
+            background-color: #4caf50;
+            color: #fff;
+            box-shadow: 0 8px 25px #4caf50aa;
+        }
+
+        button {
+            background: #fff;
+            color: #764ba2;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(255,255,255,0.5);
+            transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+            user-select: none;
+        }
+
+        button:hover {
+            background-color: #764ba2;
+            color: #fff;
+            transform: scale(1.05);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        footer {
+            margin-top: 3rem;
+            font-size: 0.9rem;
+            color: #ddd;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            button {
+                padding: 12px 30px;
+                font-size: 1rem;
+            }
+
+            #result {
+                font-size: 1.4rem;
+                padding: 15px 20px;
+                min-width: 220px;
+            }
+        }
     </style>
 </head>
 <body>
+
+    <h1>Detector de Estalos de Dedos</h1>
     <button id="startBtn">Iniciar Detecção</button>
     <div id="result">Status: Aguardando...</div>
+
+    <footer>
+        Desenvolvido com ❤️ usando Teachable Machine e TensorFlow.js
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.3.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands"></script>
 
     <script>
-        let recognizer;
+        const resultEl = document.getElementById('result');
+        const startBtn = document.getElementById('startBtn');
+
+        // Substitua pela URL completa do seu modelo hospedado no Vercel
         const modelURL = 'https://som-eight.vercel.app/assets/';
 
+        let recognizer;
+
         async function init() {
+            resultEl.textContent = 'Carregando modelo...';
             recognizer = speechCommands.create(
                 'BROWSER_FFT',
                 null,
                 modelURL + 'model.json',
                 modelURL + 'metadata.json'
             );
-            
             await recognizer.ensureModelLoaded();
+            resultEl.textContent = 'Modelo carregado! Clique em "Iniciar Detecção"';
+            startBtn.disabled = false;
         }
 
-        document.getElementById('startBtn').addEventListener('click', async () => {
-            try {
+        async function startListening() {
+            startBtn.disabled = true;
+            resultEl.textContent = 'Escutando... Faça um estalo de dedo!';
+            resultEl.classList.remove('detected');
+
+            recognizer.listen(({ scores }) => {
+                // scores é um array com probabilidades para cada classe
+                const maxScore = Math.max(...scores);
+                const maxIndex = scores.indexOf(maxScore);
+
+                // Supondo que a classe 0 seja "Estalo"
+                if (maxIndex === 0 && maxScore > 0.90) {
+                    resultEl.textContent = '👏 ESTALO DETECTADO!';
+                    resultEl.classList.add('detected');
+                    // Aqui você pode adicionar ações extras, como tocar som ou animar algo
+                } else {
+                    resultEl.textContent = 'Escutando... Faça um estalo de dedo!';
+                    resultEl.classList.remove('detected');
+                }
+            }, {
+                includeSpectrogram: true,
+                probabilityThreshold: 0.90,
+                invokeCallbackOnNoiseAndUnknown: true
+            });
+        }
+
+        startBtn.addEventListener('click', async () => {
+            if (!recognizer) {
                 await init();
-                recognizer.listen(async ({ scores }) => {
-                    const prediction = scores.indexOf(Math.max(...scores));
-                    if(prediction === 0) {
-                        document.getElementById('result').textContent = 'ESTALO DETECTADO!';
-                        // Adicione aqui ações ao detectar estalo
-                    }
-                }, {
-                    includeSpectrogram: true,
-                    probabilityThreshold: 0.9,
-                    invokeCallbackOnNoiseAndUnknown: true
-                });
-            } catch (error) {
-                console.error('Erro:', error);
             }
+            startListening();
         });
+
+        // Desabilita o botão até o modelo carregar
+        startBtn.disabled = true;
+        init();
     </script>
+
 </body>
 </html>
