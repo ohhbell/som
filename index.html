@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Aplicativo para detectar sons como estalos, palmas e voz com visualização da onda sonora">
-    <title>Detector de Sons com Onda Congelada</title>
+    <title>Detector de Sons com Visualização</title>
     <style>
         :root {
             --primary-color: #4a6fa5;
@@ -144,6 +144,14 @@
             border-radius: 3px;
         }
 
+        #detection-info {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            font-weight: 500;
+            padding: 0.5rem;
+            min-height: 1.5rem;
+        }
+
         footer {
             margin-top: 3rem;
             font-size: 0.9rem;
@@ -237,14 +245,16 @@
 <body>
     <div id="app">
         <h1>Detector de Sons</h1>
-        <p id="instructions">Aplicativo para detectar sons como estalos, palmas e voz com visualização da onda sonora</p>
+        <p id="instructions">Aplicativo para detectar sons como estalos, palmas e voz com visualização em tempo real</p>
         
         <div id="result" role="status" aria-live="polite">Status: Aguardando início...</div>
         
         <div id="waveform-container">
             <canvas id="waveform"></canvas>
-            <div id="waveform-label">Onda sonora aparecerá aqui após detecção</div>
+            <div id="waveform-label">Onda sonora aparecerá aqui durante a detecção</div>
         </div>
+        
+        <div id="detection-info"></div>
         
         <div class="button-group">
             <button id="startBtn" aria-label="Iniciar detecção de sons">
@@ -271,6 +281,7 @@
         const waveformCanvas = document.getElementById('waveform');
         const waveformCtx = waveformCanvas.getContext('2d');
         const waveformLabel = document.getElementById('waveform-label');
+        const detectionInfo = document.getElementById('detection-info');
 
         // Configuração da visualização da onda
         let audioContext;
@@ -280,6 +291,7 @@
         let isListening = false;
         let mediaStream;
         let lastDetectedWaveform = null;
+        let lastDetectedSound = null;
 
         // Sons que devem parar a detecção automaticamente
         const TARGET_SOUNDS = ['palmas', 'estalo', 'voz']; // Ajuste conforme os nomes das classes no seu modelo
@@ -400,11 +412,13 @@
             // Limpa o canvas e desenha a linha central
             waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
             drawCenterLine();
-            waveformLabel.textContent = "Onda sonora aparecerá aqui após detecção";
+            waveformLabel.textContent = "Onda sonora aparecerá aqui durante a detecção";
             lastDetectedWaveform = null;
+            lastDetectedSound = null;
+            detectionInfo.textContent = '';
         }
 
-        function freezeWaveform() {
+        function freezeWaveform(soundName) {
             if (!analyser) return;
             
             // Captura os dados atuais da onda
@@ -412,6 +426,7 @@
             const frozenData = new Uint8Array(bufferLength);
             analyser.getByteTimeDomainData(frozenData);
             lastDetectedWaveform = frozenData;
+            lastDetectedSound = soundName;
             
             // Para a animação em tempo real
             if (animationId) {
@@ -421,7 +436,11 @@
             
             // Desenha a onda congelada
             drawWaveformFromData(frozenData);
-            waveformLabel.textContent = "Onda sonora do último som detectado";
+            waveformLabel.textContent = `Onda sonora de: ${soundName}`;
+            
+            // Mostra informações sobre a detecção
+            detectionInfo.textContent = `🔊 Som detectado: ${soundName.toUpperCase()}`;
+            detectionInfo.style.color = '#28a745';
         }
 
         function updateUI() {
@@ -476,6 +495,7 @@
             try {
                 isListening = true;
                 updateUI();
+                stopVisualization();
                 
                 // Conecta o stream de áudio ao analyser
                 mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -495,8 +515,8 @@
                         resultEl.textContent = `🔊 Detectado: ${detectedLabel.toUpperCase()} (${(maxScore * 100).toFixed(1)}%)`;
                         resultEl.className = 'detected';
                         
-                        // Congela a visualização
-                        freezeWaveform();
+                        // Congela a visualização com o nome do som
+                        freezeWaveform(detectedLabel);
                         
                         // Verifica se o som detectado está na lista de sons alvo
                         if (TARGET_SOUNDS.includes(detectedLabel.toLowerCase())) {
