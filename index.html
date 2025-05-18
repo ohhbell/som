@@ -281,6 +281,9 @@
         let mediaStream;
         let lastDetectedWaveform = null;
 
+        // Sons que devem parar a detecção automaticamente
+        const TARGET_SOUNDS = ['palmas', 'estalo', 'voz']; // Ajuste conforme os nomes das classes no seu modelo
+
         // URL do modelo hospedado
         const modelURL = 'https://som-eight.vercel.app/assets/';
 
@@ -492,9 +495,14 @@
                         resultEl.textContent = `🔊 Detectado: ${detectedLabel.toUpperCase()} (${(maxScore * 100).toFixed(1)}%)`;
                         resultEl.className = 'detected';
                         
-                        // Congela a visualização e para a escuta
+                        // Congela a visualização
                         freezeWaveform();
-                        stopListening();
+                        
+                        // Verifica se o som detectado está na lista de sons alvo
+                        if (TARGET_SOUNDS.includes(detectedLabel.toLowerCase())) {
+                            // Para a escuta apenas se for um dos sons alvo
+                            stopListening();
+                        }
                     } else {
                         resultEl.textContent = 'Escutando... Faça um som (estalo, palmas, voz)!';
                         resultEl.className = '';
