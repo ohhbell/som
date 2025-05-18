@@ -3,12 +3,26 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Aplicativo para detectar sons como estalos, palmas e voz">
     <title>Detector de Sons (Estalo, Palmas, Voz)</title>
     <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #166088;
+            --background-color: #f8f9fa;
+            --text-color: #333;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --error-color: #dc3545;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -16,77 +30,186 @@
             justify-content: center;
             padding: 20px;
             text-align: center;
+            line-height: 1.6;
+            margin: 0;
         }
+
         h1 {
-            font-weight: 700;
-            font-size: 2.8rem;
-            margin-bottom: 1rem;
-            text-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        }
-        #result {
-            margin-top: 2rem;
-            font-size: 1.8rem;
             font-weight: 600;
-            padding: 20px 30px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-            min-width: 280px;
-            transition: background-color 0.4s ease, color 0.4s ease;
+            font-size: 2.2rem;
+            margin-bottom: 1.5rem;
+            color: var(--secondary-color);
         }
+
+        #app {
+            width: 100%;
+            max-width: 500px;
+            padding: 2rem;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        #result {
+            margin: 2rem 0;
+            font-size: 1.4rem;
+            font-weight: 500;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            background-color: #f1f1f1;
+            min-width: 250px;
+            transition: var(--transition);
+            border-left: 5px solid transparent;
+        }
+
         #result.detected {
-            background-color: #4caf50;
-            color: #fff;
-            box-shadow: 0 8px 25px #4caf50aa;
+            background-color: #e8f5e9;
+            border-left: 5px solid var(--success-color);
+            color: var(--text-color);
         }
+
+        #result.error {
+            background-color: #fdecea;
+            border-left: 5px solid var(--error-color);
+        }
+
+        #result.loading {
+            background-color: #fff8e1;
+            border-left: 5px solid var(--warning-color);
+        }
+
         button {
-            background: #fff;
-            color: #764ba2;
+            background: var(--primary-color);
+            color: white;
             border: none;
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            font-weight: 700;
-            border-radius: 30px;
+            padding: 12px 32px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: var(--border-radius);
             cursor: pointer;
-            box-shadow: 0 6px 15px rgba(255,255,255,0.5);
-            transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
-            user-select: none;
+            transition: var(--transition);
+            margin: 0.5rem;
+            width: 100%;
+            max-width: 250px;
         }
-        button:hover {
-            background-color: #764ba2;
-            color: #fff;
-            transform: scale(1.05);
+
+        button:hover, button:focus {
+            background: var(--secondary-color);
+            outline: none;
+            transform: translateY(-2px);
         }
+
         button:active {
-            transform: scale(0.95);
+            transform: translateY(0);
         }
+
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+
         footer {
             margin-top: 3rem;
             font-size: 0.9rem;
-            color: #ddd;
-            opacity: 0.7;
+            color: #666;
         }
-        @media (max-width: 480px) {
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        @media (max-width: 600px) {
             h1 {
-                font-size: 2rem;
+                font-size: 1.8rem;
             }
-            button {
-                padding: 12px 30px;
-                font-size: 1rem;
+            
+            #app {
+                padding: 1.5rem;
             }
+            
             #result {
-                font-size: 1.4rem;
-                padding: 15px 20px;
-                min-width: 220px;
+                font-size: 1.2rem;
+                padding: 1rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                transition: none !important;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #1a1a1a;
+                --text-color: #f8f9fa;
+                --primary-color: #5a86c5;
+                --secondary-color: #2a7fbb;
+            }
+            
+            body {
+                background-color: #121212;
+            }
+            
+            #app {
+                background: #2d2d2d;
+            }
+            
+            #result {
+                background-color: #3d3d3d;
+            }
+            
+            #result.detected {
+                background-color: #2d3d2d;
+            }
+            
+            #result.error {
+                background-color: #3d2d2d;
+            }
+            
+            #result.loading {
+                background-color: #3d3d2d;
+            }
+            
+            footer {
+                color: #aaa;
             }
         }
     </style>
 </head>
 <body>
-
-    <h1>Detector de Sons</h1>
-    <button id="startBtn">Iniciar Detecção</button>
-    <div id="result">Status: Aguardando...</div>
+    <div id="app">
+        <h1>Detector de Sons</h1>
+        <p id="instructions">Aplicativo para detectar sons como estalos, palmas e voz</p>
+        
+        <div id="result" role="status" aria-live="polite">Status: Aguardando início...</div>
+        
+        <div class="button-group">
+            <button id="startBtn" aria-label="Iniciar detecção de sons">
+                Iniciar Detecção
+            </button>
+            <button id="stopBtn" disabled aria-label="Parar detecção de sons">
+                Parar Detecção
+            </button>
+        </div>
+    </div>
 
     <footer>
         Desenvolvido com ❤️ usando Teachable Machine e TensorFlow.js
@@ -98,65 +221,119 @@
     <script>
         const resultEl = document.getElementById('result');
         const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const instructionsEl = document.getElementById('instructions');
 
-        // URL completa do seu modelo hospedado no Vercel (substitua pelo seu domínio)
+        // URL do modelo hospedado
         const modelURL = 'https://som-eight.vercel.app/assets/';
 
         let recognizer;
         let labels = [];
+        let isListening = false;
+
+        function updateUI() {
+            if (!recognizer) {
+                resultEl.textContent = 'Carregando modelo...';
+                resultEl.className = 'loading';
+                startBtn.disabled = true;
+                stopBtn.disabled = true;
+            } else if (isListening) {
+                resultEl.textContent = 'Escutando... Faça um som (estalo, palmas, voz)!';
+                resultEl.className = '';
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } else {
+                resultEl.textContent = 'Pronto para iniciar a detecção';
+                resultEl.className = '';
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        }
 
         async function init() {
-            resultEl.textContent = 'Carregando modelo...';
-            recognizer = speechCommands.create(
-                'BROWSER_FFT',
-                null,
-                modelURL + 'model.json',
-                modelURL + 'metadata.json'
-            );
-            await recognizer.ensureModelLoaded();
-            labels = recognizer.wordLabels(); // Obtém as classes do modelo
-            resultEl.textContent = 'Modelo carregado! Clique em "Iniciar Detecção"';
-            startBtn.disabled = false;
+            try {
+                updateUI();
+                
+                recognizer = speechCommands.create(
+                    'BROWSER_FFT',
+                    null,
+                    modelURL + 'model.json',
+                    modelURL + 'metadata.json'
+                );
+                
+                await recognizer.ensureModelLoaded();
+                labels = recognizer.wordLabels();
+                
+                instructionsEl.textContent = `Modelo carregado. Pode detectar: ${labels.join(', ')}`;
+                updateUI();
+                
+            } catch (error) {
+                console.error('Erro ao carregar o modelo:', error);
+                resultEl.textContent = 'Erro ao carregar o modelo. Por favor, recarregue a página.';
+                resultEl.className = 'error';
+                startBtn.disabled = true;
+            }
         }
 
         async function startListening() {
-            startBtn.disabled = true;
-            resultEl.textContent = 'Escutando... Faça um som (estalo, palmas, voz)!';
-            resultEl.classList.remove('detected');
+            try {
+                isListening = true;
+                updateUI();
+                
+                recognizer.listen(({ scores }) => {
+                    const maxScore = Math.max(...scores);
+                    const maxIndex = scores.indexOf(maxScore);
 
-            recognizer.listen(({ scores }) => {
-                // scores é um array com probabilidades para cada classe
-                const maxScore = Math.max(...scores);
-                const maxIndex = scores.indexOf(maxScore);
+                    if (maxScore > 0.85) {
+                        const detectedLabel = labels[maxIndex];
+                        resultEl.textContent = `🔊 Detectado: ${detectedLabel.toUpperCase()} (${(maxScore * 100).toFixed(1)}%)`;
+                        resultEl.className = 'detected';
+                    } else {
+                        resultEl.textContent = 'Escutando... Faça um som (estalo, palmas, voz)!';
+                        resultEl.className = '';
+                    }
+                }, {
+                    includeSpectrogram: true,
+                    probabilityThreshold: 0.85,
+                    invokeCallbackOnNoiseAndUnknown: true,
+                    overlapFactor: 0.5
+                });
+                
+            } catch (error) {
+                console.error('Erro ao iniciar a escuta:', error);
+                resultEl.textContent = 'Erro ao acessar o microfone. Verifique as permissões.';
+                resultEl.className = 'error';
+                isListening = false;
+                updateUI();
+            }
+        }
 
-                if (maxScore > 0.85) { // Threshold para evitar falsos positivos
-                    const detectedLabel = labels[maxIndex];
-                    // Exibe o nome da classe detectada e a confiança em %
-                    resultEl.textContent = `🔊 Detectado: ${detectedLabel.toUpperCase()} (${(maxScore * 100).toFixed(1)}%)`;
-                    resultEl.classList.add('detected');
-                } else {
-                    // Enquanto não detecta nada com confiança suficiente
-                    resultEl.textContent = 'Escutando... Faça um som (estalo, palmas, voz)!';
-                    resultEl.classList.remove('detected');
+        function stopListening() {
+            try {
+                if (recognizer && isListening) {
+                    recognizer.stopListening();
+                    isListening = false;
+                    updateUI();
                 }
-            }, {
-                includeSpectrogram: true,
-                probabilityThreshold: 0.85,
-                invokeCallbackOnNoiseAndUnknown: true
-            });
+            } catch (error) {
+                console.error('Erro ao parar a escuta:', error);
+            }
         }
 
         startBtn.addEventListener('click', async () => {
             if (!recognizer) {
                 await init();
             }
-            startListening();
+            if (!isListening) {
+                await startListening();
+            }
         });
 
-        // Desabilita botão até o modelo carregar
-        startBtn.disabled = true;
+        stopBtn.addEventListener('click', stopListening);
+
+        // Inicialização
+        updateUI();
         init();
     </script>
-
 </body>
 </html>
