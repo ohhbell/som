@@ -136,32 +136,21 @@
         }
 
         /* Visualizador de Áudio */
-        #visualizer {
+        .visualizer-container {
             width: 100%;
-            height: 100px;
             margin: 20px 0;
-            position: relative;
-            display: none;
-        }
-
-        #waveform {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
-            border-radius: var(--border-radius);
-        }
-
-        #frequency {
-            width: 100%;
-            height: 100px;
-            margin: 20px 0;
-            background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
-            border-radius: var(--border-radius);
             display: none;
         }
 
         .visualizer-active {
-            display: block !important;
+            display: block;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+            border-radius: var(--border-radius);
         }
 
         /* Indicador de atividade */
@@ -247,7 +236,7 @@
                 background-color: #3d3d2d;
             }
             
-            #waveform, #frequency {
+            canvas {
                 background: linear-gradient(to bottom, #333, #444);
             }
             
@@ -269,11 +258,11 @@
             <span>Microfone ativo</span>
         </div>
         
-        <div id="visualizer">
+        <div class="visualizer-container" id="waveformContainer">
             <canvas id="waveform"></canvas>
         </div>
         
-        <div id="frequency">
+        <div class="visualizer-container" id="frequencyContainer">
             <canvas id="frequencyBars"></canvas>
         </div>
         
@@ -299,8 +288,8 @@
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const instructionsEl = document.getElementById('instructions');
-        const visualizer = document.getElementById('visualizer');
-        const frequency = document.getElementById('frequency');
+        const waveformContainer = document.getElementById('waveformContainer');
+        const frequencyContainer = document.getElementById('frequencyContainer');
         const micStatus = document.getElementById('micStatus');
         const waveformCanvas = document.getElementById('waveform');
         const frequencyCanvas = document.getElementById('frequencyBars');
@@ -321,17 +310,15 @@
 
         // Configuração dos canvases
         function setupCanvases() {
-            waveformCanvas.width = visualizer.offsetWidth;
-            waveformCanvas.height = visualizer.offsetHeight;
+            waveformCanvas.width = waveformContainer.offsetWidth;
+            waveformCanvas.height = 100;
             
-            frequencyCanvas.width = frequency.offsetWidth;
-            frequencyCanvas.height = frequency.offsetHeight;
+            frequencyCanvas.width = frequencyContainer.offsetWidth;
+            frequencyCanvas.height = 100;
         }
 
         // Animação do visualizador de onda
         function drawWaveform() {
-            animationId = requestAnimationFrame(drawWaveform);
-            
             analyser.getByteTimeDomainData(dataArray);
             
             waveformCtx.fillStyle = 'rgb(200, 200, 200)';
@@ -359,12 +346,12 @@
             
             waveformCtx.lineTo(waveformCanvas.width, waveformCanvas.height / 2);
             waveformCtx.stroke();
+            
+            animationId = requestAnimationFrame(drawWaveform);
         }
 
         // Animação do visualizador de frequência
         function drawFrequency() {
-            animationId = requestAnimationFrame(drawFrequency);
-            
             analyser.getByteFrequencyData(dataArray);
             
             frequencyCtx.fillStyle = 'rgb(200, 200, 200)';
@@ -381,6 +368,8 @@
                 
                 x += barWidth + 1;
             }
+            
+            requestAnimationFrame(drawFrequency);
         }
 
         // Inicializa o áudio para visualização
@@ -390,15 +379,15 @@
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 2048;
                 
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                 microphone = audioContext.createMediaStreamSource(stream);
                 microphone.connect(analyser);
                 
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
                 
                 setupCanvases();
-                visualizer.classList.add('visualizer-active');
-                frequency.classList.add('visualizer-active');
+                waveformContainer.classList.add('visualizer-active');
+                frequencyContainer.classList.add('visualizer-active');
                 micStatus.classList.add('active');
                 
                 drawWaveform();
@@ -421,8 +410,12 @@
                 microphone.disconnect();
             }
             
-            visualizer.classList.remove('visualizer-active');
-            frequency.classList.remove('visualizer-active');
+            if (audioContext && audioContext.state !== 'closed') {
+                audioContext.close();
+            }
+            
+            waveformContainer.classList.remove('visualizer-active');
+            frequencyContainer.classList.remove('visualizer-active');
             micStatus.classList.remove('active');
             
             waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
