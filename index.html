@@ -135,6 +135,64 @@
             border-width: 0;
         }
 
+        /* Visualizador de Áudio */
+        #visualizer {
+            width: 100%;
+            height: 100px;
+            margin: 20px 0;
+            position: relative;
+            display: none;
+        }
+
+        #waveform {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+            border-radius: var(--border-radius);
+        }
+
+        #frequency {
+            width: 100%;
+            height: 100px;
+            margin: 20px 0;
+            background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+            border-radius: var(--border-radius);
+            display: none;
+        }
+
+        .visualizer-active {
+            display: block !important;
+        }
+
+        /* Indicador de atividade */
+        #micStatus {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 10px 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #micStatus.active {
+            opacity: 1;
+        }
+
+        #micIcon {
+            width: 20px;
+            height: 20px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         @media (max-width: 600px) {
             h1 {
                 font-size: 1.8rem;
@@ -153,6 +211,7 @@
         @media (prefers-reduced-motion: reduce) {
             * {
                 transition: none !important;
+                animation: none !important;
             }
         }
 
@@ -188,6 +247,10 @@
                 background-color: #3d3d2d;
             }
             
+            #waveform, #frequency {
+                background: linear-gradient(to bottom, #333, #444);
+            }
+            
             footer {
                 color: #aaa;
             }
@@ -200,6 +263,19 @@
         <p id="instructions">Aplicativo para detectar sons como estalos, palmas e voz</p>
         
         <div id="result" role="status" aria-live="polite">Status: Aguardando início...</div>
+        
+        <div id="micStatus">
+            <div id="micIcon"></div>
+            <span>Microfone ativo</span>
+        </div>
+        
+        <div id="visualizer">
+            <canvas id="waveform"></canvas>
+        </div>
+        
+        <div id="frequency">
+            <canvas id="frequencyBars"></canvas>
+        </div>
         
         <div class="button-group">
             <button id="startBtn" aria-label="Iniciar detecção de sons">
@@ -223,6 +299,11 @@
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const instructionsEl = document.getElementById('instructions');
+        const visualizer = document.getElementById('visualizer');
+        const frequency = document.getElementById('frequency');
+        const micStatus = document.getElementById('micStatus');
+        const waveformCanvas = document.getElementById('waveform');
+        const frequencyCanvas = document.getElementById('frequencyBars');
 
         // URL do modelo hospedado
         const modelURL = 'https://som-eight.vercel.app/assets/';
@@ -230,6 +311,123 @@
         let recognizer;
         let labels = [];
         let isListening = false;
+        let audioContext;
+        let analyser;
+        let microphone;
+        let dataArray;
+        let animationId;
+        let waveformCtx = waveformCanvas.getContext('2d');
+        let frequencyCtx = frequencyCanvas.getContext('2d');
+
+        // Configuração dos canvases
+        function setupCanvases() {
+            waveformCanvas.width = visualizer.offsetWidth;
+            waveformCanvas.height = visualizer.offsetHeight;
+            
+            frequencyCanvas.width = frequency.offsetWidth;
+            frequencyCanvas.height = frequency.offsetHeight;
+        }
+
+        // Animação do visualizador de onda
+        function drawWaveform() {
+            animationId = requestAnimationFrame(drawWaveform);
+            
+            analyser.getByteTimeDomainData(dataArray);
+            
+            waveformCtx.fillStyle = 'rgb(200, 200, 200)';
+            waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+            
+            waveformCtx.lineWidth = 2;
+            waveformCtx.strokeStyle = 'rgb(0, 0, 0)';
+            waveformCtx.beginPath();
+            
+            const sliceWidth = waveformCanvas.width / analyser.fftSize;
+            let x = 0;
+            
+            for(let i = 0; i < analyser.fftSize; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = v * waveformCanvas.height / 2;
+                
+                if(i === 0) {
+                    waveformCtx.moveTo(x, y);
+                } else {
+                    waveformCtx.lineTo(x, y);
+                }
+                
+                x += sliceWidth;
+            }
+            
+            waveformCtx.lineTo(waveformCanvas.width, waveformCanvas.height / 2);
+            waveformCtx.stroke();
+        }
+
+        // Animação do visualizador de frequência
+        function drawFrequency() {
+            animationId = requestAnimationFrame(drawFrequency);
+            
+            analyser.getByteFrequencyData(dataArray);
+            
+            frequencyCtx.fillStyle = 'rgb(200, 200, 200)';
+            frequencyCtx.fillRect(0, 0, frequencyCanvas.width, frequencyCanvas.height);
+            
+            const barWidth = (frequencyCanvas.width / analyser.frequencyBinCount) * 2.5;
+            let x = 0;
+            
+            for(let i = 0; i < analyser.frequencyBinCount; i++) {
+                const barHeight = (dataArray[i] / 255) * frequencyCanvas.height;
+                
+                frequencyCtx.fillStyle = `rgb(${Math.floor(barHeight * 2.5)}, 50, 50)`;
+                frequencyCtx.fillRect(x, frequencyCanvas.height - barHeight, barWidth, barHeight);
+                
+                x += barWidth + 1;
+            }
+        }
+
+        // Inicializa o áudio para visualização
+        async function initAudioVisualization() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+                
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                
+                setupCanvases();
+                visualizer.classList.add('visualizer-active');
+                frequency.classList.add('visualizer-active');
+                micStatus.classList.add('active');
+                
+                drawWaveform();
+                drawFrequency();
+                
+                return true;
+            } catch (error) {
+                console.error('Erro ao inicializar visualização de áudio:', error);
+                return false;
+            }
+        }
+
+        // Para a visualização de áudio
+        function stopAudioVisualization() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            
+            if (microphone) {
+                microphone.disconnect();
+            }
+            
+            visualizer.classList.remove('visualizer-active');
+            frequency.classList.remove('visualizer-active');
+            micStatus.classList.remove('active');
+            
+            waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+            frequencyCtx.clearRect(0, 0, frequencyCanvas.width, frequencyCanvas.height);
+        }
 
         function updateUI() {
             if (!recognizer) {
@@ -277,6 +475,12 @@
 
         async function startListening() {
             try {
+                // Inicia a visualização de áudio primeiro
+                const audioInitialized = await initAudioVisualization();
+                if (!audioInitialized) {
+                    throw new Error('Não foi possível acessar o microfone');
+                }
+                
                 isListening = true;
                 updateUI();
                 
@@ -288,6 +492,10 @@
                         const detectedLabel = labels[maxIndex];
                         resultEl.textContent = `🔊 Detectado: ${detectedLabel.toUpperCase()} (${(maxScore * 100).toFixed(1)}%)`;
                         resultEl.className = 'detected';
+                        
+                        // Efeito visual quando detecta um som
+                        waveformCtx.fillStyle = 'rgba(76, 175, 80, 0.3)';
+                        waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
                     } else {
                         resultEl.textContent = 'Escutando... Faça um som (estalo, palmas, voz)!';
                         resultEl.className = '';
@@ -313,6 +521,7 @@
                 if (recognizer && isListening) {
                     recognizer.stopListening();
                     isListening = false;
+                    stopAudioVisualization();
                     updateUI();
                 }
             } catch (error) {
@@ -330,6 +539,13 @@
         });
 
         stopBtn.addEventListener('click', stopListening);
+
+        // Redimensionar os canvases quando a janela for redimensionada
+        window.addEventListener('resize', () => {
+            if (isListening) {
+                setupCanvases();
+            }
+        });
 
         // Inicialização
         updateUI();
